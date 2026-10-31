@@ -23,4 +23,12 @@ Row Level Security aktif di tabel `produk`.
 
 Pengunjung tetap bisa melihat katalog karena data dibaca oleh server memakai kunci rahasia, bukan langsung dari browser.
 
+## Fitur tambahan
+
+Jalankan ulang `docs/schema.sql` untuk menambah kolom `aktif`, `stok`, `harga_diskon`, `badge`, `urutan`, dan `foto_urls` pada produk, beserta tabel kategori, varian, ulasan, klik pesan, banner, pengaturan toko, dan log aktivitas. Skrip juga menyiapkan bucket Storage publik `produk`; hanya admin terautentikasi yang boleh mengunggah atau menghapus file.
+
+Semua tabel baru mengaktifkan RLS. Data publik dibaca server menggunakan `SUPABASE_SECRET_KEY`; aksi admin memakai sesi `SUPABASE_PUBLISHABLE_KEY` dan tetap melewati policy RLS.
+
+Untuk fitur pembuat deskripsi dan tanya produk, tambahkan `GEMINI_API_KEY` ke environment server (bukan `NEXT_PUBLIC_*`). `GEMINI_MODEL` opsional.
+
 Skrip lengkap ada di `docs/schema.sql`.

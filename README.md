@@ -19,7 +19,7 @@ Template workshop vibe coding Creative Hub App Talent (CHAT) 2026. Repo ini beri
    npm install
    ```
 
-7. **Buat file `.env.local`.** Salin `.env.example` menjadi `.env.local`, lalu isi dengan nilai yang sama seperti di Vercel.
+7. **Buat file `.env.local`.** Salin `.env.example` menjadi `.env.local`, lalu isi dengan nilai yang sama seperti di Vercel. Untuk fitur AI, isi juga `GEMINI_API_KEY` dari Google AI Studio di Vercel dan `.env.local`.
 8. **Jalankan di laptop.**
 
    ```bash

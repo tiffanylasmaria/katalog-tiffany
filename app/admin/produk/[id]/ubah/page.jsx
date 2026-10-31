@@ -27,6 +27,12 @@ export default async function HalamanUbahProduk({ params, searchParams }) {
     notFound();
   }
 
+  const [{ data: kategori }, { data: varian }] = await Promise.all([
+    supabase.from("kategori_produk").select("id,nama").order("nama"),
+    supabase.from("varian_produk").select("id,nama,harga").eq("produk_id", id).order("id"),
+  ]);
+  produk.varian_produk = varian || [];
+
   const query = searchParams ? await searchParams : {};
 
   return (
@@ -42,6 +48,7 @@ export default async function HalamanUbahProduk({ params, searchParams }) {
         produk={produk}
         action={ubahProduk.bind(null, id)}
         labelTombol="Simpan perubahan"
+        kategori={kategori || []}
       />
     </div>
   );

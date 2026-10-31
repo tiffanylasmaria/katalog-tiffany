@@ -88,3 +88,138 @@ select
 from kategori k
 cross join lateral unnest(k.daftar) with ordinality as p (nama, ke)
 where not exists (select 1 from public.produk where deskripsi like 'Contoh untuk uji paginasi%');
+
+-- 5. Kolom tambahan untuk fitur katalog dan admin.
+alter table public.produk add column if not exists aktif boolean not null default true;
+alter table public.produk add column if not exists stok integer;
+alter table public.produk add column if not exists harga_diskon integer;
+alter table public.produk add column if not exists badge text;
+alter table public.produk add column if not exists urutan integer not null default 0;
+alter table public.produk add column if not exists foto_urls text[] not null default '{}';
+
+-- 6. Kategori, varian, ulasan, klik pesan, banner, pengaturan, dan log.
+create table if not exists public.kategori_produk (
+  id bigint generated always as identity primary key,
+  nama text not null unique,
+  dibuat_pada timestamptz not null default now()
+);
+
+insert into public.kategori_produk (nama)
+select distinct kategori from public.produk where kategori is not null and kategori <> ''
+on conflict (nama) do nothing;
+
+create table if not exists public.varian_produk (
+  id bigint generated always as identity primary key,
+  produk_id bigint not null references public.produk(id) on delete cascade,
+  nama text not null,
+  harga integer not null check (harga >= 0),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.ulasan (
+  id bigint generated always as identity primary key,
+  produk_id bigint not null references public.produk(id) on delete cascade,
+  nama text not null,
+  rating integer not null check (rating between 1 and 5),
+  komentar text not null,
+  terlihat boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.klik_pesan (
+  id bigint generated always as identity primary key,
+  produk_id bigint not null references public.produk(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.banner (
+  id bigint generated always as identity primary key,
+  judul text not null,
+  teks text,
+  gambar_url text,
+  tautan text,
+  aktif boolean not null default true,
+  dibuat_pada timestamptz not null default now()
+);
+
+create table if not exists public.pengaturan_toko (
+  id boolean primary key default true check (id),
+  nama text not null,
+  nomor_whatsapp text not null,
+  alamat text,
+  jam_buka text,
+  tagline text
+);
+
+insert into public.pengaturan_toko (id, nama, nomor_whatsapp, alamat, jam_buka, tagline)
+select true, 'serba serbi', '6289524888819', 'Jl. Contoh No. 1, Kota Anda',
+  'Setiap hari, 08.00–20.00', 'Produk rumahan dari dapur dan perajin lokal, siap dipesan lewat WhatsApp.'
+where not exists (select 1 from public.pengaturan_toko);
+
+create table if not exists public.log_aktivitas (
+  id bigint generated always as identity primary key,
+  admin_id uuid,
+  aksi text not null,
+  detail text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists produk_kategori_idx on public.produk(kategori);
+create index if not exists produk_aktif_urutan_idx on public.produk(aktif, urutan, id);
+create index if not exists klik_pesan_produk_waktu_idx on public.klik_pesan(produk_id, created_at desc);
+create index if not exists ulasan_produk_terlihat_idx on public.ulasan(produk_id, terlihat, created_at desc);
+
+alter table public.kategori_produk enable row level security;
+alter table public.varian_produk enable row level security;
+alter table public.ulasan enable row level security;
+alter table public.klik_pesan enable row level security;
+alter table public.banner enable row level security;
+alter table public.pengaturan_toko enable row level security;
+alter table public.log_aktivitas enable row level security;
+
+drop policy if exists kategori_baca_publik on public.kategori_produk;
+create policy kategori_baca_publik on public.kategori_produk for select to anon, authenticated using (true);
+drop policy if exists kategori_admin_kelola on public.kategori_produk;
+create policy kategori_admin_kelola on public.kategori_produk for all to authenticated using (true) with check (true);
+
+drop policy if exists varian_baca_publik on public.varian_produk;
+create policy varian_baca_publik on public.varian_produk for select to anon, authenticated using (true);
+drop policy if exists varian_admin_kelola on public.varian_produk;
+create policy varian_admin_kelola on public.varian_produk for all to authenticated using (true) with check (true);
+
+drop policy if exists ulasan_baca_publik on public.ulasan;
+create policy ulasan_baca_publik on public.ulasan for select to anon, authenticated using (terlihat = true);
+drop policy if exists ulasan_admin_kelola on public.ulasan;
+create policy ulasan_admin_kelola on public.ulasan for all to authenticated using (true) with check (true);
+
+drop policy if exists klik_admin_baca on public.klik_pesan;
+create policy klik_admin_baca on public.klik_pesan for select to authenticated using (true);
+
+drop policy if exists banner_baca_publik on public.banner;
+create policy banner_baca_publik on public.banner for select to anon, authenticated using (aktif = true);
+drop policy if exists banner_admin_kelola on public.banner;
+create policy banner_admin_kelola on public.banner for all to authenticated using (true) with check (true);
+
+drop policy if exists pengaturan_baca_publik on public.pengaturan_toko;
+create policy pengaturan_baca_publik on public.pengaturan_toko for select to anon, authenticated using (true);
+drop policy if exists pengaturan_admin_kelola on public.pengaturan_toko;
+create policy pengaturan_admin_kelola on public.pengaturan_toko for all to authenticated using (true) with check (true);
+
+drop policy if exists log_admin_baca on public.log_aktivitas;
+create policy log_admin_baca on public.log_aktivitas for select to authenticated using (true);
+drop policy if exists log_admin_tulis on public.log_aktivitas;
+create policy log_admin_tulis on public.log_aktivitas for insert to authenticated with check (true);
+
+-- Foto produk memakai bucket publik; unggah dan hapus tetap memerlukan sesi admin.
+insert into storage.buckets (id, name, public)
+values ('produk', 'produk', true)
+on conflict (id) do update set public = excluded.public;
+
+drop policy if exists foto_produk_baca on storage.objects;
+create policy foto_produk_baca on storage.objects for select to anon, authenticated using (bucket_id = 'produk');
+drop policy if exists foto_produk_admin_tambah on storage.objects;
+create policy foto_produk_admin_tambah on storage.objects for insert to authenticated with check (bucket_id = 'produk');
+drop policy if exists foto_produk_admin_ubah on storage.objects;
+create policy foto_produk_admin_ubah on storage.objects for update to authenticated using (bucket_id = 'produk') with check (bucket_id = 'produk');
+drop policy if exists foto_produk_admin_hapus on storage.objects;
+create policy foto_produk_admin_hapus on storage.objects for delete to authenticated using (bucket_id = 'produk');

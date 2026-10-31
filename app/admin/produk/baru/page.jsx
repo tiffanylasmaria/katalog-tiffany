@@ -1,8 +1,14 @@
 import NavAdmin from "@/components/NavAdmin";
 import FormProduk from "@/components/FormProduk";
 import { tambahProduk } from "@/app/admin/actions";
+import { buatKlienAuth } from "@/lib/supabase/auth";
+import { redirect } from "next/navigation";
 
 export default async function HalamanTambahProduk({ searchParams }) {
+  const supabase = await buatKlienAuth();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) redirect("/admin/login");
+  const { data: kategori } = await supabase.from("kategori_produk").select("id,nama").order("nama");
   const params = searchParams ? await searchParams : {};
 
   return (
@@ -17,6 +23,7 @@ export default async function HalamanTambahProduk({ searchParams }) {
       <FormProduk
         action={tambahProduk}
         labelTombol="Simpan produk"
+        kategori={kategori || []}
       />
     </div>
   );

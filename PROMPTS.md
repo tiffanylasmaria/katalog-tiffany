@@ -90,6 +90,14 @@ Tambahkan bagian baru untuk setiap error yang kamu perbaiki atau fitur bonus yan
 
 **Hasil:** Halaman ubah mengambil data berdasarkan ID dari Supabase. Server Action memeriksa sesi, memvalidasi input, memperbarui produk, memperbarui cache, lalu mengarahkan kembali ke `/admin`.
 
+## US-10 sampai US-50
+
+**Prompt:** Kerjakan fitur bonus US-10–US-50 yang tercantum di `docs/user-stories.md`, dengan Supabase hanya di server dan aksi admin dilindungi sesi.
+
+**Hasil:** Ditambahkan aksi hapus/urut/status produk, cari/filter/paginasi, harga diskon/stok/varian, galeri, upload Storage, keranjang, favorit, riwayat, bandingkan, ulasan dan moderasi, log klik/aktivitas, dashboard, banner, pengaturan toko, akun admin, impor/ekspor CSV, kategori, halaman tentang, dark mode, PWA, metadata, sitemap/robots, skeleton, dan fitur AI Gemini.
+
+**Perbaikan:** Skema tambahan dan policy RLS ditulis secara idempotent di `docs/schema.sql`. Fitur AI memakai `GEMINI_API_KEY` di server saja; fitur ini menampilkan pesan bila kunci belum diatur.
+
 ### Perbaikan konfigurasi proxy dan Next.js
 
 **Masalah:**
