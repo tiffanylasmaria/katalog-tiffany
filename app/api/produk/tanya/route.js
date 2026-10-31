@@ -21,12 +21,28 @@ export async function POST(request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Fitur tanya produk belum dikonfigurasi." }, { status: 503 });
 
-  const { data: produk, error } = await buatKlienServer()
+  const supabase = buatKlienServer();
+  let { data: produk, error } = await supabase
     .from("produk")
     .select("nama, harga, deskripsi, kategori, stok")
     .eq("id", produkId)
     .eq("aktif", true)
     .maybeSingle();
+  if (error && /stok/i.test(error.message)) {
+    ({ data: produk, error } = await supabase
+      .from("produk")
+      .select("nama, harga, deskripsi, kategori")
+      .eq("id", produkId)
+      .eq("aktif", true)
+      .maybeSingle());
+  }
+  if (error && /aktif/i.test(error.message)) {
+    ({ data: produk, error } = await supabase
+      .from("produk")
+      .select("nama, harga, deskripsi, kategori")
+      .eq("id", produkId)
+      .maybeSingle());
+  }
   if (error || !produk) return NextResponse.json({ error: "Produk tidak ditemukan." }, { status: 404 });
 
   const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
