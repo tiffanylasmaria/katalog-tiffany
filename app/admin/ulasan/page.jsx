@@ -1,0 +1,10 @@
+import NavAdmin from "@/components/NavAdmin";
+import { buatKlienAuth } from "@/lib/supabase/auth";
+import { moderasiUlasan } from "@/app/admin/actions";
+
+export default async function HalamanUlasan({ searchParams }) {
+  const supabase = await buatKlienAuth();
+  const { data: ulasan, error } = await supabase.from("ulasan").select("id,produk_id,nama,rating,komentar,terlihat,created_at").order("created_at", { ascending: false }).limit(200);
+  const params = searchParams ? await searchParams : {};
+  return <div className="flex flex-col gap-5 py-8"><NavAdmin /><h1 className="text-2xl font-extrabold">Moderasi ulasan</h1>{params.error && <p role="alert" className="bg-bahaya/10 p-3 text-sm text-bahaya">{params.error}</p>}{params.berhasil && <p role="status" className="bg-permukaan p-3 text-sm">{params.berhasil}</p>}{error && <p className="text-bahaya">{error.message}</p>}{(!ulasan || ulasan.length === 0) && !error && <p className="text-teks-lembut">Belum ada ulasan.</p>}<ul className="space-y-3">{(ulasan || []).map((item) => <li key={item.id} className="rounded-xl border border-garis p-4"><p className="font-semibold">{item.nama} · {item.rating}/5 · produk #{item.produk_id}</p><p className="my-2 text-sm">{item.komentar}</p><p className="text-xs text-teks-lembut">{item.terlihat ? "Tampil" : "Menunggu persetujuan"}</p><div className="mt-3 flex gap-3">{!item.terlihat && <form action={moderasiUlasan}><input type="hidden" name="id" value={item.id} /><input type="hidden" name="aksi" value="tampilkan" /><button className="text-sm font-semibold text-utama underline">Setujui</button></form>}<form action={moderasiUlasan}><input type="hidden" name="id" value={item.id} /><input type="hidden" name="aksi" value="sembunyikan" /><button className="text-sm underline">Sembunyikan</button></form><form action={moderasiUlasan}><input type="hidden" name="id" value={item.id} /><input type="hidden" name="aksi" value="hapus" /><button className="text-sm text-bahaya underline">Hapus</button></form></div></li>)}</ul></div>;
+}
