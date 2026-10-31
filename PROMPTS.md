@@ -98,6 +98,40 @@ Tambahkan bagian baru untuk setiap error yang kamu perbaiki atau fitur bonus yan
 
 **Perbaikan:** Skema tambahan dan policy RLS ditulis secara idempotent di `docs/schema.sql`. Fitur AI memakai `GEMINI_API_KEY` di server saja; fitur ini menampilkan pesan bila kunci belum diatur.
 
+## Catatan setelah penilaian
+
+Prompt bertanda **[SENDIRI]** di bawah adalah instruksi tambahan yang ditulis di luar lembar user story. Isinya diringkas dari permintaan dan temuan penilaian, bukan kutipan kata demi kata.
+
+### US-21 Keranjang: ubah jumlah dan hapus item
+
+**Prompt [SENDIRI]:** Perbaiki US-21. Di keranjang, sediakan kontrol untuk mengubah jumlah tiap produk dan menghapus produk. Pastikan jumlah, total harga, penyimpanan browser, dan pesan WhatsApp massal mengikuti isi keranjang terbaru.
+
+**Hasil:** Setiap baris keranjang kini memiliki input jumlah dan tombol Hapus. Perubahan jumlah dan penghapusan disimpan ke `localStorage`; total dan isi pesan WhatsApp dihitung dari daftar terbaru.
+
+**Perbaikan:** Sebelumnya keranjang hanya menampilkan daftar dan total. Kontrol jumlah dibatasi minimal 1 dan maksimal 99 agar nilai yang tidak valid tidak tersimpan.
+
+**Verifikasi:** `npm run build` berhasil. Perubahan sudah dideploy ke Production.
+
+### US-37 Produk perbandingan yang tidak tersedia
+
+**Prompt [SENDIRI]:** Perbaiki US-37. Jika produk yang tersimpan di daftar perbandingan sudah tidak ada atau tidak aktif, tampilkan pesan “Produk tidak ditemukan” yang jelas. Bersihkan ID produk usang supaya pengunjung bisa memilih produk lain. URL detail produk yang tidak ada harus mengembalikan HTTP 404.
+
+**Hasil:** Halaman perbandingan menampilkan pesan khusus bila pilihan tidak ditemukan, menandai bila sebagian pilihan hilang, dan membersihkan ID yang tidak lagi tersedia dari `localStorage`.
+
+**Perbaikan:** `notFound()` sebelumnya menampilkan konten 404 dengan status HTTP 200 karena batas loading global memulai streaming terlalu cepat. Loading dipindahkan ke bagian admin agar halaman detail dapat mengirim status 404.
+
+**Verifikasi:** `npm run build` berhasil. Permintaan ke `/produk/987654321` pada situs Production mengembalikan HTTP 404. Deployment berstatus Ready.
+
+### Penanganan kolom produk lama
+
+**Prompt [SENDIRI]:** Jika kolom tambahan `aktif` atau `stok` belum ada di database lama, sesuaikan pencarian produk pada endpoint pertanyaan agar produk yang ada tetap dapat ditemukan. Jangan kirim kunci ke browser.
+
+**Hasil:** Endpoint mencoba kolom fitur terlebih dahulu, lalu memakai kolom dasar produk saat kolom tambahan belum tersedia. Kunci tetap dibaca hanya dari environment server.
+
+**Perbaikan:** Pengujian endpoint menunjukkan query gagal ketika skema belum memiliki kolom tambahan. Fallback untuk `stok` dan `aktif` ditambahkan.
+
+**Verifikasi:** Build berhasil dan perubahan terdeploy. Panggilan langsung ke Google menolak nilai `GEMINI_API_KEY` yang ada saat itu (`API_KEY_INVALID`); fitur yang memerlukan Gemini belum terverifikasi berhasil sampai key valid dipasang di Vercel.
+
 ### Perbaikan konfigurasi proxy dan Next.js
 
 **Masalah:**
