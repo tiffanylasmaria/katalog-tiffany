@@ -72,6 +72,24 @@ Nama fungsi awalnya middleware, lalu diperbaiki menjadi proxy sesuai konvensi Ne
 
 Tambahkan bagian baru untuk setiap error yang kamu perbaiki atau fitur bonus yang kamu kerjakan.
 
+## US-07 List Produk
+
+**Prompt:** Hubungkan daftar produk admin ke tabel `produk` di Supabase.
+
+**Hasil:** Halaman admin memeriksa sesi admin di server, mengambil produk melalui koneksi Supabase bersesi, dan menampilkan status kosong atau pesan error.
+
+## US-08 Tambah produk
+
+**Prompt:** Aktifkan form tambah produk dengan Server Action yang memeriksa sesi admin.
+
+**Hasil:** Server Action memvalidasi nama dan harga, menyimpan data ke Supabase, memperbarui cache katalog, lalu mengarahkan kembali ke `/admin`. Form menampilkan pesan jika penyimpanan gagal.
+
+## US-09 Ubah produk
+
+**Prompt:** Ambil produk untuk form ubah dari Supabase dan simpan perubahan melalui Server Action terlindungi.
+
+**Hasil:** Halaman ubah mengambil data berdasarkan ID dari Supabase. Server Action memeriksa sesi, memvalidasi input, memperbarui produk, memperbarui cache, lalu mengarahkan kembali ke `/admin`.
+
 ### Perbaikan konfigurasi proxy dan Next.js
 
 **Masalah:**
