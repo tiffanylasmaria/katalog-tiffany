@@ -11,7 +11,7 @@ function getCleanUrl() {
  * Admin yang belum login akan dialihkan ke /admin/login.
  * US-06: Proteksi halaman admin.
  */
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
   // Lewati /admin/login — tidak perlu proteksi
@@ -19,12 +19,26 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
+  const supabaseUrl = getCleanUrl();
+  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+  // Fail closed: admin tidak boleh terbuka saat konfigurasi autentikasi hilang.
+  if (!supabaseUrl || !publishableKey) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/admin/login";
+    loginUrl.searchParams.set(
+      "error",
+      "Konfigurasi autentikasi belum tersedia. Hubungi pemilik toko."
+    );
+    return NextResponse.redirect(loginUrl);
+  }
+
   // Siapkan response awal; akan diganti jika cookie perlu diperbarui
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    getCleanUrl(),
-    process.env.SUPABASE_PUBLISHABLE_KEY,
+    supabaseUrl,
+    publishableKey,
     {
       cookies: {
         getAll() {
